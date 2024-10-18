@@ -18,7 +18,7 @@ module.exports = async function ({
   const { deployer } = await getNamedAccounts();
   log("------------------------------------------------------------");
   let args = [] as any[];
-  const Test = await deploy("Test", {
+  const Test = await deploy("Base", {
     from: deployer,
     args: args,
     log: true,
