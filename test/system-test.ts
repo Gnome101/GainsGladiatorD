@@ -13,7 +13,7 @@ import { execArgv } from "process";
 import { chownSync } from "fs";
 
 import exp from "constants";
-import { Test } from "../typechain-types";
+import { Base } from "../typechain-types";
 dotenv.config();
 
 // Profiler configuration
@@ -32,7 +32,7 @@ describe("Live Testnet Vault Tests", function () {
   let deployer: SignerWithAddress;
   let user: SignerWithAddress;
 
-  let Test: Test;
+  let Base: Base;
 
   beforeEach(async () => {
     const chainID = network.config.chainId;
@@ -42,19 +42,19 @@ describe("Live Testnet Vault Tests", function () {
 
     await deployments.fixture(["Test"]);
 
-    const testContract = (await deployments.get("Test")) as Deployment;
+    const testContract = (await deployments.get("Base")) as Deployment;
 
-    Test = (await ethers.getContractAt(
-      "Test",
+    Base = (await ethers.getContractAt(
+      "Base",
       testContract.address.toString()
-    )) as unknown as Test;
+    )) as unknown as Base;
   });
 
   describe("Test", function () {
     it("User can deposit ", async function () {
-      const numBefore = await Test.num();
-      await Test.setNum(5);
-      const numAfter = await Test.num();
+      const numBefore = await Base.num();
+      await Base.setNum(5);
+      const numAfter = await Base.num();
       assert.equal(numBefore.toString(), "0");
       assert.equal(numAfter.toString(), "5");
 
