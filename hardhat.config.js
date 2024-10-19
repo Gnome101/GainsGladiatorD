@@ -1,20 +1,16 @@
-import "@nomiclabs/hardhat-etherscan";
-import "hardhat-deploy";
-import "@nomiclabs/hardhat-ethers";
-import "solidity-coverage";
-import "hardhat-gas-reporter";
-import "hardhat-contract-sizer";
-import "@nomicfoundation/hardhat-network-helpers";
-import "@nomicfoundation/hardhat-ethers";
-import "@nomicfoundation/hardhat-chai-matchers";
-import "@typechain/hardhat";
-import "@nomicfoundation/hardhat-foundry";
-import * as envEnc from "@chainlink/env-enc";
-envEnc.config();
-
-import dotenv from "dotenv";
-
-dotenv.config();
+require("@nomiclabs/hardhat-etherscan");
+require("hardhat-deploy");
+require("@nomiclabs/hardhat-ethers");
+require("solidity-coverage");
+require("hardhat-gas-reporter");
+require("hardhat-contract-sizer");
+require("@nomicfoundation/hardhat-network-helpers");
+require("@nomicfoundation/hardhat-ethers");
+require("@nomicfoundation/hardhat-chai-matchers");
+require("@typechain/hardhat");
+require("@nomicfoundation/hardhat-foundry");
+require("hardhat-switch-network");
+require("dotenv").config();
 
 const MAINNET_RPC_URL =
   process.env.MAINNET_RPC_URL ||
@@ -35,17 +31,21 @@ module.exports = {
       gasPrice: "auto",
       initialBaseFeePerGas: 0,
       allowUnlimitedContractSize: true,
-
-      // mining: {
-      //   auto: false,
-      // },
     },
     arbSep: {
       url: process.env.ARB_SEP_RPC || "",
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       chainId: 421614,
-      timeout: 200000, // Increase the timeout value
+      timeout: 200000,
+      saveDeployments: true,
+    },
+    flow: {
+      url: process.env.FLOW_RPC || "",
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      chainId: 545,
+      timeout: 200000,
       saveDeployments: true,
     },
     story: {
@@ -53,7 +53,7 @@ module.exports = {
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       chainId: 1513,
-      timeout: 200000, // Increase the timeout value
+      timeout: 200000,
       saveDeployments: true,
     },
     rootStalk: {
@@ -61,39 +61,23 @@ module.exports = {
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
       chainId: 31,
-      timeout: 200000, // Increase the timeout value
+      timeout: 200000,
       saveDeployments: true,
     },
-    // airDAO: {
-    //   url: process.env.STORY_RPC || "",
-    //   accounts:
-    //     process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-    //   chainId: 1513,
-    //   timeout: 200000, // Increase the timeout value
-    //   saveDeployments: true,
-    // },
-    // flowEVM: {
-    //   url: process.env.STORY_RPC || "",
-    //   accounts:
-    //     process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-    //   chainId: 1513,
-    //   timeout: 200000, // Increase the timeout value
-    //   saveDeployments: true,
-    // },
-    // skale: {
-    //   url: process.env.STORY_RPC || "",
-    //   accounts:
-    //     process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-    //   chainId: 1513,
-    //   timeout: 200000, // Increase the timeout value
-    //   saveDeployments: true,
-    // },
+    uni: {
+      url: process.env.UNI_CHAIN_RPC || "",
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      chainId: 1301,
+      timeout: 200000,
+      saveDeployments: true,
+    },
   },
 
   namedAccounts: {
     deployer: {
-      default: 0, // here this will by default take the first account as deployer
-      1: 0, // similarly on mainnet it will take the first account as deployer. Note though that depending on how hardhat network are configured, the account 0 on one network can be different than on another
+      default: 0,
+      1: 0,
     },
     bob: {
       default: 1,
@@ -112,18 +96,18 @@ module.exports = {
             enabled: true,
             runs: 1,
             details: {
-              yul: true, //https://github.com/ethereum/solidity/issues/11638#issuecomment-1101524130 (added this so that coverage works)
+              yul: true,
             },
           },
-          //viaIR: true,
         },
       },
     ],
   },
   etherscan: {
     apiKey: {
-      // arbitrum: networks.arbitrum.verifyApiKey,
       arbSep: process.env.ARBISCAN_API_KEY,
+      flow: "abc",
+      unichain: "abc",
     },
     customChains: [
       {
@@ -146,7 +130,7 @@ module.exports = {
         network: "optimismSepolia",
         chainId: 11155420,
         urls: {
-          apiURL: "https://api-sepolia-optimistic.etherscan.io/api", // https://docs.optimism.etherscan.io/v/optimism-sepolia-etherscan
+          apiURL: "https://api-sepolia-optimistic.etherscan.io/api",
           browserURL: "https://sepolia-optimistic.etherscan.io/",
         },
       },
@@ -162,8 +146,24 @@ module.exports = {
         network: "storyNetwork",
         chainId: 1513,
         urls: {
-          apiURL: "https://story-testnet.socialscan.io/api", // https://docs.story.foundation/docs/story-network
+          apiURL: "https://story-testnet.socialscan.io/api",
           browserURL: "https://story-testnet.socialscan.io",
+        },
+      },
+      {
+        network: "flow",
+        chainId: 545,
+        urls: {
+          apiURL: "https://evm-testnet.flowscan.io//api",
+          browserURL: "https://evm-testnet.flowscan.io/",
+        },
+      },
+      {
+        network: "unichain",
+        chainId: 1301,
+        urls: {
+          apiURL: "https://api-sepolia.uniscan.xyz/api",
+          browserURL: "https://sepolia.uniscan.xyz/",
         },
       },
     ],
@@ -177,7 +177,7 @@ module.exports = {
     token: "ETH",
   },
   mocha: {
-    timeout: 1500000, // 500 seconds max for running tests
+    timeout: 1500000,
     parallel: false,
   },
 };
