@@ -4,8 +4,7 @@ pragma solidity ^0.8.23;
 import {IPAssetRegistry} from "@storyprotocol/core/registries/IPAssetRegistry.sol";
 import {LicensingModule} from "@storyprotocol/core/modules/licensing/LicensingModule.sol";
 import {RoyaltyModule} from "@storyprotocol/core/modules/royalty/RoyaltyModule.sol";
-import {PILicenseTemplate} from "@storyprotocol/core/modules/licensing/PILicenseTemplate.sol";
-import {PILTerms} from "node_modules/@story-protocol/protocol-core/contracts/modules/licensing/PILicenseTemplate.sol";
+import {PILicenseTemplate, PILTerms} from "@storyprotocol/core/modules/licensing/PILicenseTemplate.sol";
 import {ISPGNFT} from "@storyprotocol/periphery/interfaces/ISPGNFT.sol";
 import {RegistrationWorkflows} from "@storyprotocol/periphery/workflows/RegistrationWorkflows.sol";
 import {WorkflowStructs} from "@storyprotocol/periphery/lib/WorkflowStructs.sol";
@@ -27,6 +26,18 @@ contract IPACombine {
 
     uint256 pilId;
     address immutable CURRENCY;
+    // Struct to hold lending offer details
+    struct LendingOffer {
+        address lender;
+        uint256 nftId;
+        uint256 collateralAmount;
+        address borrower;
+        uint256 borrowStartTime;
+        uint256 borrowDuration;
+    }
+
+    // Mapping from NFT ID to LendingOffer
+    mapping(uint256 => LendingOffer) public lendingOffers;
 
     constructor(
         address ipAssetRegistry,
@@ -115,6 +126,7 @@ contract IPACombine {
         external
         returns (address ipId, uint256 tokenId, uint256 startLicenseTokenId)
     {
+        sUSDC.transferFrom(msg.sender, address(this), 100 * ltAmount);
         // First, mint an NFT and register it as an IP Account.
         // Note that first we mint the NFT to this contract for ease of attaching license terms.
         // We will transfer the NFT to the msg.sender at last.
@@ -172,6 +184,69 @@ contract IPACombine {
 
     function getRoyaltyVault(address ipId) external view returns (address) {
         return ROYALTY_MODULE.ipRoyaltyVaults(ipId);
+    }
+
+    function lendLicenseNFT(uint256 nftId, uint256 borrowDuration) external {
+        // Ensure the caller owns the license NFT
+        require(
+            LICENSING_MODULE.ownerOf(nftId) == msg.sender,
+            "Not the NFT owner"
+        );
+        // Transfer the NFT to this contract
+        LICENSING_MODULE.transferFrom(msg.sender, address(this), nftId);
+        // Determine the collateral amount based on the cost (overcollateralization)
+        uint256 cost = 100; // Assuming cost is 100 sUSDC per license token
+        uint256 collateralAmount = (cost * 150) / 100; // 150% overcollateralization
+        // Create a lending offer
+        lendingOffers[nftId] = LendingOffer({
+            lender: msg.sender,
+            nftId: nftId,
+            collateralAmount: collateralAmount,
+            borrower: address(0),
+            borrowStartTime: 0,
+            borrowDuration: borrowDuration
+        });
+    }
+
+    function borrowLicenseNFT(uint256 nftId) external {
+        LendingOffer storage offer = lendingOffers[nftId];
+        require(offer.lender != address(0), "NFT not available for lending");
+        require(offer.borrower == address(0), "NFT already borrowed");
+        // Require the borrower to transfer the collateral amount
+        sUSDC.transferFrom(msg.sender, address(this), offer.collateralAmount);
+        // Record the borrower and start time
+        offer.borrower = msg.sender;
+        offer.borrowStartTime = block.timestamp;
+        // Transfer the NFT to the borrower
+        LICENSING_MODULE.transferFrom(address(this), msg.sender, nftId);
+    }
+
+    function returnLicenseNFT(uint256 nftId) external {
+        LendingOffer storage offer = lendingOffers[nftId];
+        require(offer.borrower == msg.sender, "Not the borrower");
+        // Transfer the NFT back to this contract
+        LICENSING_MODULE.transferFrom(msg.sender, address(this), nftId);
+        // Transfer the NFT back to the lender
+        LICENSING_MODULE.transferFrom(address(this), offer.lender, nftId);
+        // Return the collateral to the borrower
+        sUSDC.transfer(msg.sender, offer.collateralAmount);
+        // Delete the lending offer
+        delete lendingOffers[nftId];
+    }
+
+    function claimCollateral(uint256 nftId) external {
+        LendingOffer storage offer = lendingOffers[nftId];
+        require(offer.lender == msg.sender, "Not the lender");
+        require(offer.borrower != address(0), "NFT not borrowed");
+        require(
+            block.timestamp > offer.borrowStartTime + offer.borrowDuration,
+            "Borrow duration not yet passed"
+        );
+        // Transfer the collateral to the lender
+        sUSDC.transfer(msg.sender, offer.collateralAmount);
+        // The lender keeps the NFT (already in their possession)
+        // Delete the lending offer
+        delete lendingOffers[nftId];
     }
 }
 //make a custom template -> add uniswap -> premint tokens -> when a user purchases a license they get it and the price increases ->

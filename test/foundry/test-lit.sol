@@ -12,12 +12,10 @@ import {ISPGNFT} from "@storyprotocol/periphery/interfaces/ISPGNFT.sol";
 
 import {IPAssetRegistry} from "@storyprotocol/core/registries/IPAssetRegistry.sol";
 
-import {IPARegistrar} from "contracts/IPARegistrar.sol";
 import {SimpleNFT} from "contracts/SimpleNFT.sol";
 import {MockIPGraph} from "@storyprotocol/test/mocks/MockIPGraph.sol";
 import {LicensingModule} from "@storyprotocol/core/modules/licensing/LicensingModule.sol";
 import {LicenseToken} from "@storyprotocol/core/LicenseToken.sol";
-import {IPALicenseToken} from "contracts/IPALicenseToken.sol";
 import {IPACombine} from "contracts/IPCombine.sol";
 
 import {Escrow} from "contracts/Escrow.sol";

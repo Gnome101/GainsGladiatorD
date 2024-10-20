@@ -45,4 +45,4 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   }
 };
 
-module.exports.tags = ["", "Test"];
+module.exports.tags = ["Story", "Test"];

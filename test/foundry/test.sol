@@ -12,12 +12,10 @@ import {ISPGNFT} from "@storyprotocol/periphery/interfaces/ISPGNFT.sol";
 
 import {IPAssetRegistry} from "@storyprotocol/core/registries/IPAssetRegistry.sol";
 
-import {IPARegistrar} from "contracts/IPARegistrar.sol";
 import {SimpleNFT} from "contracts/SimpleNFT.sol";
 import {MockIPGraph} from "@storyprotocol/test/mocks/MockIPGraph.sol";
 import {LicensingModule} from "@storyprotocol/core/modules/licensing/LicensingModule.sol";
 import {LicenseToken} from "@storyprotocol/core/LicenseToken.sol";
-import {IPALicenseToken} from "contracts/IPALicenseToken.sol";
 import {IPACombine} from "contracts/IPCombine.sol";
 
 /*
@@ -63,10 +61,8 @@ contract IPARegistrarTest is Test {
 
     ISPGNFT public spgNft;
 
-    IPARegistrar public ipaRegistrar;
     LicenseToken public licenseToken;
     SimpleNFT public simpleNft;
-    IPALicenseToken public ipaLicenseToken;
     IPACombine public ipaCombine;
     MockERC20 public sUSDC =
         MockERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
@@ -75,17 +71,6 @@ contract IPARegistrarTest is Test {
         // vm.etch(address(0x1B), address(new MockIPGraph()).code);
         sUSDC.mint(bob, 1000);
         ipAssetRegistry = IPAssetRegistry(ipAssetRegistryAddr);
-        ipaRegistrar = new IPARegistrar(
-            ipAssetRegistryAddr,
-            registrationWorkflowsAddr,
-            licensingModuleAddr,
-            pilTemplateAddr
-        );
-        ipaLicenseToken = new IPALicenseToken(
-            ipAssetRegistryAddr,
-            licensingModuleAddr,
-            pilTemplateAddr
-        );
 
         ipaCombine = new IPACombine(
             ipAssetRegistryAddr,
@@ -97,22 +82,14 @@ contract IPARegistrarTest is Test {
         );
         sUSDC.mint(address(ipaCombine), 1000);
 
-        simpleNft = SimpleNFT(ipaLicenseToken.SIMPLE_NFT());
-        spgNft = ISPGNFT(ipaRegistrar.SPG_NFT());
-
         ipAssetRegistry = IPAssetRegistry(ipAssetRegistryAddr);
         licenseToken = LicenseToken(licenseTokenAddr);
-        ipaLicenseToken = new IPALicenseToken(
-            ipAssetRegistryAddr,
-            licensingModuleAddr,
-            pilTemplateAddr
-        );
+
         simpleNft = SimpleNFT(ipaCombine.SIMPLE_NFT());
 
         console.log("SimpleNFT: %s", address(simpleNft));
         vm.label(address(ipAssetRegistry), "IPAssetRegistry");
         vm.label(address(simpleNft), "SimpleNFT");
-        vm.label(address(spgNft), "SPGNFT");
         vm.label(
             address(0x000000006551c19487814612e58FE06813775758),
             "ERC6551Registry"
