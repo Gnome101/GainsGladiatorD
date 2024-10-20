@@ -13,11 +13,21 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     args: args,
     log: true,
   });
-
   if (chainId != 31337) {
     log("Verifying...");
     await verify(TestToken.address, args, "contracts/TestToken:TestToken.sol");
   }
+  args = [TestToken.address];
+  const Escrow = await deploy("Escrow", {
+    from: deployer,
+    args: args,
+    log: true,
+  });
+
+  if (chainId != 31337) {
+    log("Verifying...");
+    await verify(Escrow.address, args, "contracts/Escrow:Escrow.sol");
+  }
 };
 
-module.exports.tags = ["", "Test"];
+module.exports.tags = ["Escrow", "Test"];

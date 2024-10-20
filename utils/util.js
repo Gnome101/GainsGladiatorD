@@ -21,8 +21,16 @@ const fs = require("fs");
 require("dotenv").config();
 
 const CUSTOM_CHAIN = {
-  unichain: { rpcUrl: process.env.UNI_CHAIN_RPC, chainId: 1301 },
-  flow: { rpcUrl: process.env.FLOW_RPC, chainId: 545 },
+  unichain: {
+    rpcUrl: process.env.UNI_CHAIN_RPC,
+    chainId: 1301,
+    blockExplorerUrl: "https://evm-testnet.flowscan.io/",
+  },
+  flow: {
+    rpcUrl: process.env.FLOW_RPC,
+    chainId: 545,
+    blockExplorerUrl: "https://sepolia.uniscan.xyz/",
+  },
 };
 
 const litNodeClient = new LitNodeClient({
@@ -274,6 +282,8 @@ async function executeSwapAction(_action_ipfs, _mintedPKP) {
       authSig: JSON.stringify(authSig),
       chainAGasConfig: gasConfigA,
       chainBGasConfig: gasConfigB,
+      userA: "0x793448209Ef713CAe41437C7DaA219b59BEF1A4A",
+      userB: "0x793448209Ef713CAe41437C7DaA219b59BEF1A4A",
     },
   });
 
@@ -292,6 +302,8 @@ async function executeSwapAction(_action_ipfs, _mintedPKP) {
     await executeTxA(results, chainAProvider);
     await executeTxB(results, chainBProvider);
   }
+
+  litNodeClient.disconnect();
 }
 
 async function executeTxA(results, chainAProvider) {
@@ -308,7 +320,7 @@ async function executeTxA(results, chainAProvider) {
   console.log(tx1);
 
   const receipt1 = await tx1.wait();
-  const blockExplorer1 = LIT_CHAINS[chainAParams.chain].blockExplorerUrls[0];
+  const blockExplorer1 = CUSTOM_CHAIN[chainAParams.chain].blockExplorerUrl;
 
   console.log(`tx: ${blockExplorer1}/tx/${receipt1.transactionHash}`);
 }
@@ -325,7 +337,7 @@ async function executeTxB(results, chainBProvider) {
     )
   );
   const receipt2 = await tx2.wait();
-  const blockExplorer2 = LIT_CHAINS[chainBParams.chain].blockExplorerUrls[0];
+  const blockExplorer2 = CUSTOM_CHAIN[chainBParams.chain].blockExplorerUrl;
 
   console.log(`tx: ${blockExplorer2}/tx/${receipt2.transactionHash}`);
 }
@@ -678,3 +690,54 @@ module.exports = {
   getFundsStatusPKP,
   getFundsStatusWallet,
 };
+// const { ethers } = require("ethers");
+
+// // 1. Define the Partial ABI for transferFrom
+// const partialABI = [
+//   "function transferFrom(address from, address to, uint256 amount) external returns (bool)",
+// ];
+
+// // 2. Create an Interface instance
+// const iface = new ethers.utils.Interface(partialABI);
+
+// // 3. Set up the parameters for transferFrom
+// const fromAddress = "0xSenderAddressHere"; // Replace with the sender's address
+// const toAddress = "0xRecipientAddressHere"; // Replace with the recipient's address
+// const amount = ethers.utils.parseUnits("10.0", 18); // Example: 10 tokens with 18 decimals
+
+// // 4. Encode the function data
+// const data = iface.encodeFunctionData("transferFrom", [
+//   fromAddress,
+//   toAddress,
+//   amount,
+// ]);
+
+// // 5. Define the transaction details
+// const tx = {
+//   to: "0xTokenContractAddressHere", // Replace with the ERC-20 token contract address
+//   data: data,
+//   gasLimit: ethers.utils.hexlify(100000), // Example gas limit
+//   gasPrice: ethers.utils.parseUnits("20", "gwei"), // Example gas price
+//   nonce: 0, // Replace with the correct nonce
+//   chainId: 1, // Mainnet chain ID; replace if using a different network
+// };
+
+// // 6. (Optional) Serialize the transaction
+// // If you need to serialize and sign the transaction, you can use a wallet
+// const privateKey = "0xYourPrivateKeyHere"; // Replace with your private key
+// const wallet = new ethers.Wallet(privateKey);
+
+// // Serialize the transaction
+// async function serializeTransaction() {
+//   // Populate nonce if not set
+//   if (!tx.nonce) {
+//     const provider = ethers.getDefaultProvider("mainnet"); // Change network if needed
+//     tx.nonce = await provider.getTransactionCount(wallet.address);
+//   }
+
+//   // Sign the transaction
+//   const signedTx = await wallet.signTransaction(tx);
+//   console.log("Serialized Transaction:", signedTx);
+// }
+
+// serializeTransaction();

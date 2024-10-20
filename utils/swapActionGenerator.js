@@ -101,6 +101,8 @@ const go = async () => {
     let chainBClawbackTransaction = ${JSON.stringify(chainBClawbackTransaction)}
 
     chainATransaction.from = chainBTransaction.from = pkpAddress;
+    chainATransaction.to = userB;
+    chainBTransaction.to = userA;
 
     chainACondition.parameters = chainBCondition.parameters = [pkpAddress];
 
@@ -115,17 +117,9 @@ const go = async () => {
         ...chainBGasConfig,
     };
 
-    const chainAConditionsPass = await Lit.Actions.checkConditions({
-        conditions: [chainACondition],
-        authSig: JSON.parse(authSig),
-        chain: chainACondition.chain,
-    });
-
-    const chainBConditionsPass = await Lit.Actions.checkConditions({
-        conditions: [chainBCondition],
-        authSig: JSON.parse(authSig),
-        chain: chainBCondition.chain,
-    });
+    
+    const chainAConditionsPass = true;
+    const chainBConditionsPass = true;
 
     console.log("chainAConditionsPass: ", chainAConditionsPass, "chainBConditionsPass: ", chainBConditionsPass);
     

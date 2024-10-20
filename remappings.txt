@@ -1,2 +1,15 @@
-@storyprotocol/core/=lib/storyprotocol-core/
 @protocol-periphery-v1/=lib/protocol-periphery-v1/
+@openzeppelin/=node_modules/@openzeppelin/
+@storyprotocol/core/=node_modules/@story-protocol/protocol-core/contracts/
+@storyprotocol/periphery/=node_modules/@story-protocol/protocol-periphery/contracts/
+erc6551/=node_modules/erc6551/
+forge-std/=node_modules/forge-std/src/
+ds-test/=node_modules/ds-test/src/
+@openzeppelin/=node_modules/@openzeppelin/
+@storyprotocol/core/=node_modules/@story-protocol/protocol-core/contracts/
+@storyprotocol/script/=node_modules/@story-protocol/protocol-core/script/foundry/
+@storyprotocol/test/=node_modules/@story-protocol/protocol-core/test/foundry/
+@create3-deployer/=node_modules/@story-protocol/create3-deployer/
+@solady/=node_modules/solady/
+ds-test/=lib/forge-std/lib/ds-test/src/
+forge-std/=lib/forge-std/src/
