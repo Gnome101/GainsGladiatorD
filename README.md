@@ -42,7 +42,7 @@ This project leverages advanced blockchain technologies to facilitate trustless 
 
 ### Prediction Market on Flow Blockchain
 
-The prediction market is held in another contract
+\*The prediction market is held in another repo
 
 - **Custom Deployment**: Tailored prediction market leveraging Flow's consumer-focused infrastructure.
 - **User Engagement**: Designed for ease of use and accessibility.
