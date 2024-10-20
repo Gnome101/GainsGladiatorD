@@ -9,6 +9,7 @@ import {ISPGNFT} from "@storyprotocol/periphery/interfaces/ISPGNFT.sol";
 import {RegistrationWorkflows} from "@storyprotocol/periphery/workflows/RegistrationWorkflows.sol";
 import {WorkflowStructs} from "@storyprotocol/periphery/lib/WorkflowStructs.sol";
 import {MockERC20} from "lib/protocol-periphery-v1/test/mocks/MockERC20.sol";
+import {ILicenseToken} from "@story-protocol/protocol-core/contracts/interfaces/ILicenseToken.sol";
 
 import {SimpleNFT} from "./SimpleNFT.sol";
 
@@ -23,6 +24,7 @@ contract IPACombine {
     RoyaltyModule public immutable ROYALTY_MODULE;
     MockERC20 public sUSDC =
         MockERC20(0x91f6F05B08c16769d3c85867548615d270C42fC7);
+    ILicenseToken public immutable LICENSE_NFT;
 
     uint256 pilId;
     address immutable CURRENCY;
@@ -34,6 +36,7 @@ contract IPACombine {
         address borrower;
         uint256 borrowStartTime;
         uint256 borrowDuration;
+        uint256 feePerSecond;
     }
 
     // Mapping from NFT ID to LendingOffer
@@ -45,6 +48,7 @@ contract IPACombine {
         address licensingModule,
         address pilTemplate,
         address royaltyModule,
+        address tokenLicesee,
         address currency
     ) {
         CURRENCY = currency;
@@ -52,6 +56,7 @@ contract IPACombine {
         LICENSING_MODULE = LicensingModule(licensingModule);
         ROYALTY_MODULE = RoyaltyModule(royaltyModule);
         PIL_TEMPLATE = PILicenseTemplate(pilTemplate);
+        LICENSE_NFT = ILicenseToken(tokenLicesee);
         // Create a new Simple NFT collection
         SIMPLE_NFT = new SimpleNFT("Simple IP NFT", "SIM");
         REGISTRATION_WORKFLOWS = RegistrationWorkflows(registrationWorkflows);
@@ -102,6 +107,7 @@ contract IPACombine {
         // Note that licenseTermsId = 2 is a Non-Commercial Social Remixing (NSCR) license.
         // Read more about NSCR: https://docs.storyprotocol.xyz/docs/pil-flavors#flavor-1-non-commercial-social-remixing
         // LICENSING_MODULE.attachLicenseTerms(ipId, address(PIL_TEMPLATE), 2);
+        sUSDC.transferFrom(msg.sender, address(this), 100 * ltAmount);
 
         // Then, mint a License Token from the attached license terms.
         // Note that the License Token is minted to the ltRecipient.
@@ -186,14 +192,20 @@ contract IPACombine {
         return ROYALTY_MODULE.ipRoyaltyVaults(ipId);
     }
 
-    function lendLicenseNFT(uint256 nftId, uint256 borrowDuration) external {
+    /// @notice Allows a user to lend a license NFT with a time-based fee.
+    /// @param nftId The ID of the license NFT to lend.
+    /// @param borrowDuration The maximum duration (in seconds) for which the NFT can be borrowed.
+    /// @param feePerSecond The fee rate per second that the borrower must pay.
+    function lendLicenseNFT(
+        uint256 nftId,
+        uint256 borrowDuration,
+        uint256 feePerSecond
+    ) external {
         // Ensure the caller owns the license NFT
-        require(
-            LICENSING_MODULE.ownerOf(nftId) == msg.sender,
-            "Not the NFT owner"
-        );
+
         // Transfer the NFT to this contract
-        LICENSING_MODULE.transferFrom(msg.sender, address(this), nftId);
+        LICENSE_NFT.transferFrom(msg.sender, address(this), nftId);
+        // LICENSING_MODULE.transferFrom(msg.sender, address(this), nftId);
         // Determine the collateral amount based on the cost (overcollateralization)
         uint256 cost = 100; // Assuming cost is 100 sUSDC per license token
         uint256 collateralAmount = (cost * 150) / 100; // 150% overcollateralization
@@ -202,12 +214,15 @@ contract IPACombine {
             lender: msg.sender,
             nftId: nftId,
             collateralAmount: collateralAmount,
+            feePerSecond: feePerSecond,
             borrower: address(0),
             borrowStartTime: 0,
             borrowDuration: borrowDuration
         });
     }
 
+    /// @notice Allows a user to borrow a license NFT by providing collateral.
+    /// @param nftId The ID of the license NFT to borrow.
     function borrowLicenseNFT(uint256 nftId) external {
         LendingOffer storage offer = lendingOffers[nftId];
         require(offer.lender != address(0), "NFT not available for lending");
@@ -218,22 +233,35 @@ contract IPACombine {
         offer.borrower = msg.sender;
         offer.borrowStartTime = block.timestamp;
         // Transfer the NFT to the borrower
-        LICENSING_MODULE.transferFrom(address(this), msg.sender, nftId);
+        LICENSE_NFT.transferFrom(address(this), msg.sender, nftId);
     }
 
+    /// @notice Allows the borrower to return the license NFT and reclaim collateral minus the fee.
+    /// @param nftId The ID of the license NFT to return.
     function returnLicenseNFT(uint256 nftId) external {
         LendingOffer storage offer = lendingOffers[nftId];
         require(offer.borrower == msg.sender, "Not the borrower");
+        // Calculate the fee based on the time borrowed
+        uint256 timeBorrowed = block.timestamp - offer.borrowStartTime;
+        uint256 fee = timeBorrowed * offer.feePerSecond;
+        // Ensure the fee does not exceed the collateral amount
+        if (fee > offer.collateralAmount) {
+            fee = offer.collateralAmount;
+        }
         // Transfer the NFT back to this contract
-        LICENSING_MODULE.transferFrom(msg.sender, address(this), nftId);
+        LICENSE_NFT.transferFrom(msg.sender, address(this), nftId);
         // Transfer the NFT back to the lender
-        LICENSING_MODULE.transferFrom(address(this), offer.lender, nftId);
-        // Return the collateral to the borrower
-        sUSDC.transfer(msg.sender, offer.collateralAmount);
+        LICENSE_NFT.transferFrom(address(this), offer.lender, nftId);
+        // Transfer the fee to the lender
+        sUSDC.transfer(offer.lender, fee);
+        // Return the remaining collateral to the borrower
+        sUSDC.transfer(msg.sender, offer.collateralAmount - fee);
         // Delete the lending offer
         delete lendingOffers[nftId];
     }
 
+    /// @notice Allows the lender to claim collateral if the borrower defaults.
+    /// @param nftId The ID of the license NFT for which to claim collateral.
     function claimCollateral(uint256 nftId) external {
         LendingOffer storage offer = lendingOffers[nftId];
         require(offer.lender == msg.sender, "Not the lender");

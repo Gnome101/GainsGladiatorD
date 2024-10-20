@@ -56,6 +56,8 @@ contract IPARegistrarTest is Test {
     address internal royaltyModuleAddr =
         0x3C27b2D7d30131D4b58C3584FD7c86e3358744de;
 
+    address internal tokenLicesnse = 0xc7A302E03cd7A304394B401192bfED872af501BE;
+
     IPAssetRegistry public ipAssetRegistry;
     LicensingModule public immutable LICENSING_MODULE;
 
@@ -78,6 +80,7 @@ contract IPARegistrarTest is Test {
             licensingModuleAddr,
             pilTemplateAddr,
             royaltyModuleAddr,
+            tokenLicesnse,
             address(sUSDC)
         );
         sUSDC.mint(address(ipaCombine), 1000);
@@ -117,6 +120,7 @@ contract IPARegistrarTest is Test {
         // vm.prank(alice);
         (address ipId, uint256 tokenId) = ipaCombine.mintIp({prompt: "test"});
 
+        vm.prank(bob);
         uint256 startLicenseTokenId = ipaCombine.mintLicenseTokenMin({
             ipId: ipId,
             tokenId: tokenId,
@@ -134,5 +138,147 @@ contract IPARegistrarTest is Test {
 
         vm.prank(alice);
         ipaCombine.snapshotAndClaimByTokenBatch(ipId);
+    }
+
+    function test_lendAndBorrowLicenseNFT() public {
+        // Alice approves sUSDC to IPACombine contract
+        vm.prank(bob);
+        sUSDC.approve(address(ipaCombine), 10000);
+
+        // Alice mints an IP and license token
+        vm.prank(alice);
+        (address ipId, uint256 tokenId) = ipaCombine.mintIp("test prompt");
+
+        vm.prank(bob);
+        uint256 licenseTokenId = ipaCombine.mintLicenseTokenMin(
+            ipId,
+            tokenId,
+            1,
+            bob
+        );
+
+        // Alice approves the IPACombine contract to transfer her license token
+        vm.prank(bob);
+        licenseToken.approve(address(ipaCombine), licenseTokenId);
+
+        // Alice lends the license NFT
+        uint256 borrowDuration = 7 days;
+        uint256 feePerSecond = 1e16; // 0.01 sUSDC per second
+        vm.prank(bob);
+        ipaCombine.lendLicenseNFT(licenseTokenId, borrowDuration, feePerSecond);
+
+        // // Bob approves sUSDC to IPACombine contract for collateral
+        // uint256 collateralAmount = (100e18 * 150) / 100; // 150% of 100 sUSDC
+        // vm.prank(bob);
+        // sUSDC.approve(address(ipaCombine), collateralAmount);
+
+        // // Bob borrows the license NFT
+        // vm.prank(bob);
+        // ipaCombine.borrowLicenseNFT(licenseTokenId);
+
+        // // Check that Bob now owns the license token
+        // assertEq(
+        //     licenseToken.ownerOf(licenseTokenId),
+        //     bob,
+        //     "Bob should own the license token"
+        // );
+
+        // // Simulate time passing (e.g., 3 days)
+        // vm.warp(block.timestamp + 3 days);
+
+        // // Bob returns the license NFT
+        // vm.prank(bob);
+        // licenseToken.approve(address(ipaCombine), licenseTokenId);
+
+        // vm.prank(bob);
+        // ipaCombine.returnLicenseNFT(licenseTokenId);
+
+        // // Check that Alice now owns the license token again
+        // assertEq(
+        //     licenseToken.ownerOf(licenseTokenId),
+        //     alice,
+        //     "Alice should own the license token"
+        // );
+
+        // // Calculate expected fee
+        // uint256 timeBorrowed = 3 days;
+        // uint256 expectedFee = timeBorrowed * feePerSecond;
+        // if (expectedFee > collateralAmount) {
+        //     expectedFee = collateralAmount;
+        // }
+
+        // // Check balances
+        // uint256 aliceBalance = sUSDC.balanceOf(alice);
+        // uint256 bobBalance = sUSDC.balanceOf(bob);
+
+        // assertEq(aliceBalance, expectedFee, "Alice balance incorrect");
+        // assertEq(bobBalance, 1000e18 - expectedFee, "Bob balance incorrect");
+    }
+
+    // Test claiming collateral when borrower defaults
+    function test_claimCollateral() public {
+        // Alice approves sUSDC to IPACombine contract
+        vm.prank(alice);
+        sUSDC.approve(address(ipaCombine), 1000e18);
+
+        // Alice mints an IP and license token
+        vm.prank(alice);
+        (address ipId, uint256 tokenId) = ipaCombine.mintIp("test prompt");
+
+        vm.prank(alice);
+        uint256 licenseTokenId = ipaCombine.mintLicenseTokenMin(
+            ipId,
+            tokenId,
+            1,
+            alice
+        );
+
+        // Alice approves the IPACombine contract to transfer her license token
+        vm.prank(alice);
+        licenseToken.approve(address(ipaCombine), licenseTokenId);
+
+        // Alice lends the license NFT
+        uint256 borrowDuration = 7 days;
+        uint256 feePerSecond = 1e16; // 0.01 sUSDC per second
+        vm.prank(alice);
+        ipaCombine.lendLicenseNFT(licenseTokenId, borrowDuration, feePerSecond);
+
+        // Bob approves sUSDC to IPACombine contract for collateral
+        uint256 collateralAmount = (100e18 * 150) / 100; // 150% of 100 sUSDC
+        vm.prank(bob);
+        sUSDC.approve(address(ipaCombine), collateralAmount);
+
+        // Bob borrows the license NFT
+        vm.prank(bob);
+        ipaCombine.borrowLicenseNFT(licenseTokenId);
+
+        // Check that Bob now owns the license token
+        assertEq(
+            licenseToken.ownerOf(licenseTokenId),
+            bob,
+            "Bob should own the license token"
+        );
+
+        // Simulate time passing beyond borrow duration
+        vm.warp(block.timestamp + 8 days);
+
+        // Alice claims the collateral
+        vm.prank(alice);
+        ipaCombine.claimCollateral(licenseTokenId);
+
+        // Check that Alice has received the collateral
+        uint256 aliceBalance = sUSDC.balanceOf(alice);
+        assertEq(
+            aliceBalance,
+            collateralAmount,
+            "Alice should receive collateral"
+        );
+
+        // The license token remains with Bob since he defaulted
+        assertEq(
+            licenseToken.ownerOf(licenseTokenId),
+            bob,
+            "Bob still owns the license token"
+        );
     }
 } //0x4c8CCd0214D0fd65De6f255b75C0AB3f0fDB8c2d

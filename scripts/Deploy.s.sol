@@ -14,6 +14,7 @@ contract DeployIPACombine is Script {
         address pilTemplateAddr = 0x0752f61E59fD2D39193a74610F1bd9a6Ade2E3f9;
         address royaltyModuleAddr = 0x3C27b2D7d30131D4b58C3584FD7c86e3358744de;
         address susdAddr = 0x91f6F05B08c16769d3c85867548615d270C42fC7;
+        address tokenLicesnse = 0xc7A302E03cd7A304394B401192bfED872af501BE;
 
         // Start broadcasting transactions to the network
         vm.startBroadcast();
@@ -25,6 +26,7 @@ contract DeployIPACombine is Script {
             licensingModuleAddr,
             pilTemplateAddr,
             royaltyModuleAddr,
+            tokenLicesnse,
             susdAddr
         );
 
