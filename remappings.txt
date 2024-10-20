@@ -1,0 +1,2 @@
+@storyprotocol/core/=lib/storyprotocol-core/
+@protocol-periphery-v1/=lib/protocol-periphery-v1/
