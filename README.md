@@ -1,6 +1,6 @@
 # Project Title
 
-[Insert your project name here]
+GainsGladiator
 
 ## Introduction
 
@@ -41,6 +41,8 @@ This project leverages advanced blockchain technologies to facilitate trustless 
 - **Lending System**: License token holders can lend their licenses to others.
 
 ### Prediction Market on Flow Blockchain
+
+The prediction market is held in another contract
 
 - **Custom Deployment**: Tailored prediction market leveraging Flow's consumer-focused infrastructure.
 - **User Engagement**: Designed for ease of use and accessibility.
@@ -112,27 +114,6 @@ Foundry is a blazing fast, portable, and modular toolkit for Ethereum applicatio
 - **Hardhat**: Ethereum development environment.
 - **Foundry**: Toolkit for Ethereum application development.
 - **Yarn**: Package management and project setup.
-
-## Contributing
-
-We welcome contributions from the community. To contribute:
-
-1. Fork the repository.
-2. Create a new branch: `git checkout -b feature/YourFeature`
-3. Commit your changes: `git commit -m 'Add your feature'`
-4. Push to the branch: `git push origin feature/YourFeature`
-5. Open a pull request.
-
-## License
-
-[Specify the license under which the project is distributed, e.g., MIT License.]
-
-## Contact
-
-For questions or collaboration:
-
-- **Email**: [your.email@example.com](mailto:your.email@example.com)
-- **GitHub**: [yourusername](https://github.com/yourusername)
 
 ---
 
